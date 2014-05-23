@@ -1,8 +1,10 @@
 package com.ahsrav.incentives;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -35,6 +37,8 @@ public class JobsListActivity extends ActionBarActivity {
 	private String[] mNavBar;
 	private CharSequence mTitle;
 	private CharSequence mDrawerTitle;
+	private Integer mNavItemClickedPos = 1;
+	private String mDataToParse;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +48,7 @@ public class JobsListActivity extends ActionBarActivity {
 		navDrawerSetup();
 		
 		if (savedInstanceState == null) {
-			selectItem(0);
+			selectItem("", 0);
 		}
 		
 		
@@ -111,32 +115,24 @@ public class JobsListActivity extends ActionBarActivity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-	
-	
+		
 	private class DrawerItemClickListener implements ListView.OnItemClickListener {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 			// Auto-generated method stub
-			selectItem(position);
+			mNavItemClickedPos = position;
+			if (mNavItemClickedPos == 0) {
+				// TODO: Get default settings for location and other search parameters and create the necessary url
+				String url = "http://api.indeed.com/ads/apisearch?publisher=9616825572719411&v=2&format=xml&l=austin";
+				new GetJobsTask().execute(url);
+				// TODO: mDataToParse needs to be parsed and saved in parsedData
+				
+			}
+			else 
+				mDataToParse = mNavItemClickedPos.toString()+" was clicked";
+			selectItem(mDataToParse, mNavItemClickedPos);
+			
 		}
-	}
-
-	/** Swaps fragments in the main content view */
-	private void selectItem(int position) {
-	    // Create a new fragment and specify the planet to show based on position
-	    Fragment fragment = new MainContentFragment();
-	    Bundle args = new Bundle();
-	    args.putInt(MainContentFragment.ARG_NAV_ITEM_NUM, position);
-	    fragment.setArguments(args);
-
-	    // Insert the fragment by replacing any existing fragment
-	    FragmentManager fragmentManager = getFragmentManager();
-	    fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
-
-	    // Highlight the selected item, update the title, and close the drawer
-	    mNavDrawerList.setItemChecked(position, true);
-	    setTitle(mNavBar[position]);
-	    mDrawerLayout.closeDrawer(mNavDrawerList);
 	}
 
 	@Override
@@ -159,13 +155,31 @@ public class JobsListActivity extends ActionBarActivity {
 		mDrawerToggle.onConfigurationChanged(newConfig);
 	}
 	
+
+	/** Swaps fragments in the main content view */
+	private void selectItem(String parsedData, int position) {
+	    // Create a new fragment and specify the planet to show based on position
+	    Fragment fragment = new MainContentFragment();
+	    Bundle args = new Bundle();
+	    args.putString(MainContentFragment.ARG_DATA_TO_DISPLAY, parsedData);
+	    fragment.setArguments(args);
+
+	    // Insert the fragment by replacing any existing fragment
+	    FragmentManager fragmentManager = getFragmentManager();
+	    fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
+
+	    // Highlight the selected item, update the title, and close the drawer
+	    mNavDrawerList.setItemChecked(position, true);
+	    setTitle(mNavBar[position]);
+	    mDrawerLayout.closeDrawer(mNavDrawerList);
+	}
 	
 
 	/**
 	 * Fragment the controls the "content_frame". Displays content corresponding to nav bar item selected
 	 */
 	public static class MainContentFragment extends Fragment {
-		public static final String ARG_NAV_ITEM_NUM = "nav_item_number";
+		public static final String ARG_DATA_TO_DISPLAY = "parsed_data";
 
 		public MainContentFragment() {
 			// Empty constructor
@@ -177,32 +191,27 @@ public class JobsListActivity extends ActionBarActivity {
 			View rootView = inflater.inflate(R.layout.fragment_jobs_list,
 					container, false);
 			TextView mTextView = (TextView) rootView.findViewById(R.id.textView1);
-			int i = getArguments().getInt(ARG_NAV_ITEM_NUM);
-			String toDisplay = getResources().getStringArray(R.array.nav_drawer_items)[i];
-			
-			// Get xml data from indeed's API
-			JobsListActivity mJobsList = new JobsListActivity();
-			mJobsList.new GetJobsTask().execute();
-			
-			
-			mTextView.setText(toDisplay);
+			String dataToDisplay = getArguments().getString(ARG_DATA_TO_DISPLAY);
+			Log.i("JobsListActivity", "Fragment display entered for "+dataToDisplay);
+			mTextView.setText(dataToDisplay);
 			return rootView;
+
 		}
 	}
 	
-	private class GetJobsTask extends AsyncTask<Void, Void, String> {
+	private class GetJobsTask extends AsyncTask<String, Void, String> {
 
 		private static final String TAG = "GetJobsTask";
-		private static final String URL = "http://api.indeed.com/ads/apisearch?publisher=9616825572719411&v=2&format=xml&l=austin";
+		//private static final String URL = "http://api.indeed.com/ads/apisearch?publisher=9616825572719411&v=2&format=xml&l=austin";
 		
 		@Override
-		protected String doInBackground(Void... params) {
-			// TODO Auto-generated method stub
+		protected String doInBackground(String... url) {
+			// Auto-generated method stub
 			String data = "";
 			HttpURLConnection urlConnection = null;
 			
 			try {
-				urlConnection = (HttpURLConnection) new URL(URL).openConnection();
+				urlConnection = (HttpURLConnection) new URL(url[0]).openConnection();
 				InputStream in = new BufferedInputStream(urlConnection.getInputStream());
 				data = readStream(in);
 			} catch (MalformedURLException exception) {
@@ -218,12 +227,31 @@ public class JobsListActivity extends ActionBarActivity {
 		
 		@Override
 		protected void onPostExecute(String result) {
-			mTextView.setText(result);
+			mDataToParse = result;
 		}
 
 		private String readStream(InputStream in) {
-			// TODO Auto-generated method stub
-			return null;
+			// Auto-generated method stub
+			BufferedReader reader = null;
+			StringBuffer data = new StringBuffer("");
+			try {
+				reader = new BufferedReader(new InputStreamReader(in));
+				String line = "";
+				while ((line = reader.readLine()) != null) {
+					data.append(line);
+				}
+			} catch (IOException e) {
+				Log.e(TAG, "IOException");
+			} finally {
+				if (reader != null) {
+					try {
+						reader.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			return data.toString();
 		}
 		
 	}
