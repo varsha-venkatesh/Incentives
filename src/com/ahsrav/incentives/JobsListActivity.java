@@ -8,6 +8,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.List;
+
+import org.xmlpull.v1.XmlPullParserException;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -27,6 +30,8 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import com.ahsrav.incentives.JobsListXMLParser.Result;
 
 public class JobsListActivity extends ActionBarActivity {
 
@@ -105,6 +110,14 @@ public class JobsListActivity extends ActionBarActivity {
 		// Handle action bar item clicks here. The action bar will
 		// automatically handle clicks on the Home/Up button, so long
 		// as you specify a parent activity in AndroidManifest.xml.
+		
+		// Pass the event to ActionBarDrawerToggle, if it returns
+        // true, then it has handled the app icon touch event
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
+          return true;
+        }
+        // Handle your other action bar items...
+
 		int id = item.getItemId();
 		if (id == R.id.action_settings) {
 			return true;
@@ -210,16 +223,21 @@ public class JobsListActivity extends ActionBarActivity {
 		protected String doInBackground(String... url) {
 			// Auto-generated method stub
 			String data = "";
+			List<Result> listResults = null;
 			HttpURLConnection urlConnection = null;
+			JobsListXMLParser mJobsListXMLParser = new JobsListXMLParser();
 			try {
 				urlConnection = (HttpURLConnection) new URL(url[0]).openConnection();
 				InputStream in = new BufferedInputStream(urlConnection.getInputStream());
 				data = readStream(in);
+				listResults = mJobsListXMLParser.parse(in);
 				Log.i(TAG, "Entered try with "+data);
 			} catch (MalformedURLException exception) {
 				Log.e(TAG, "MalformedURLException");
 			} catch (IOException exception) {
 				Log.e(TAG, "IOException");
+			} catch (XmlPullParserException exception) {
+				Log.e(TAG, "XmlPullParserException");
 			} finally {
 				if (null != urlConnection)
 					urlConnection.disconnect();
@@ -230,6 +248,20 @@ public class JobsListActivity extends ActionBarActivity {
 		@Override
 		protected void onPostExecute(String result) {
 			mDataToParse = result;
+			// Insert parsed data into ListView
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
 			selectItem(mDataToParse, 0);
 		}
 
