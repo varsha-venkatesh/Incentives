@@ -48,6 +48,7 @@ public class JobsListActivity extends ActionBarActivity {
 		navDrawerSetup();
 		
 		if (savedInstanceState == null) {
+			// TODO: Set the url to retrieve all jobs within 20 miles of the current location
 			selectItem("", 0);
 		}
 		
@@ -124,14 +125,15 @@ public class JobsListActivity extends ActionBarActivity {
 			if (mNavItemClickedPos == 0) {
 				// TODO: Get default settings for location and other search parameters and create the necessary url
 				String url = "http://api.indeed.com/ads/apisearch?publisher=9616825572719411&v=2&format=xml&l=austin";
+				selectItem("Please wait while data is being loaded", mNavItemClickedPos);
 				new GetJobsTask().execute(url);
 				// TODO: mDataToParse needs to be parsed and saved in parsedData
 				
 			}
-			else 
+			else {
 				mDataToParse = mNavItemClickedPos.toString()+" was clicked";
-			selectItem(mDataToParse, mNavItemClickedPos);
-			
+				selectItem(mDataToParse, mNavItemClickedPos);
+			}
 		}
 	}
 
@@ -209,11 +211,11 @@ public class JobsListActivity extends ActionBarActivity {
 			// Auto-generated method stub
 			String data = "";
 			HttpURLConnection urlConnection = null;
-			
 			try {
 				urlConnection = (HttpURLConnection) new URL(url[0]).openConnection();
 				InputStream in = new BufferedInputStream(urlConnection.getInputStream());
 				data = readStream(in);
+				Log.i(TAG, "Entered try with "+data);
 			} catch (MalformedURLException exception) {
 				Log.e(TAG, "MalformedURLException");
 			} catch (IOException exception) {
@@ -228,6 +230,7 @@ public class JobsListActivity extends ActionBarActivity {
 		@Override
 		protected void onPostExecute(String result) {
 			mDataToParse = result;
+			selectItem(mDataToParse, 0);
 		}
 
 		private String readStream(InputStream in) {
