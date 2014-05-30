@@ -8,10 +8,10 @@
     <string name="drawer_open">Drawer Open</string>
     <string name="drawer_closed">Drawer Closed</string>
 	<string-array name="nav_drawer_items">
-        <item>Item 1</item>
-        <item>Item 2</item>
-        <item>Item 3</item>
-        <item>Item 4</item>
-        <item>Item 5</item>
+        <item>All Jobs</item>
+        <item>Saved Jobs</item>
+        <item>Pervious Jobs</item>
+        <item>My Resumes</item>
+        <item>Tips and Tricks</item>
     </string-array>
 </resources>

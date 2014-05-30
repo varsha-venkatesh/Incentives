@@ -1,22 +1,20 @@
 package com.ahsrav.incentives;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
-import org.xmlpull.v1.XmlPullParserException;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.app.ListFragment;
 import android.content.res.Configuration;
+import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarActivity;
@@ -30,8 +28,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-
-import com.ahsrav.incentives.JobsListXMLParser.Result;
 
 public class JobsListActivity extends ActionBarActivity {
 
@@ -137,7 +133,7 @@ public class JobsListActivity extends ActionBarActivity {
 			mNavItemClickedPos = position;
 			if (mNavItemClickedPos == 0) {
 				// TODO: Get default settings for location and other search parameters and create the necessary url
-				String url = "http://api.indeed.com/ads/apisearch?publisher=9616825572719411&v=2&format=xml&l=austin";
+				String url = "http://api.indeed.com/ads/apisearch?publisher=9616825572719411&v=2&format=json&l=austin&limit=20";
 				selectItem("Please wait while data is being loaded", mNavItemClickedPos);
 				new GetJobsTask().execute(url);
 				// TODO: mDataToParse needs to be parsed and saved in parsedData
@@ -168,20 +164,63 @@ public class JobsListActivity extends ActionBarActivity {
 		super.onConfigurationChanged(newConfig);
 		// Pass any configuration change to the drawer toggle
 		mDrawerToggle.onConfigurationChanged(newConfig);
+	}	
+	
+	private class GetJobsTask extends AsyncTask<String, Void, List<Result>> {
+
+//		private static final String TAG = "GetJobsTask";
+		AndroidHttpClient mClient = AndroidHttpClient.newInstance("");
+		
+		@Override
+		protected List<Result> doInBackground(String... url) {
+			HttpGet request = new HttpGet(url[0]);
+			JSONResponseHandler responseHandler = new JSONResponseHandler();
+			try {
+				return mClient.execute(request, responseHandler);
+			} catch (ClientProtocolException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+		
+		
+		
+		@Override
+		protected void onPostExecute(List<Result> results) {
+			
+			if (mClient != null)
+				mClient.close();
+			
+			Log.i("onPostExecute", "There are "+results.size()+" entries");
+			Fragment fragment = new ListMainContentFragment();
+			Bundle args = new Bundle();
+			args.putParcelableArrayList(ListMainContentFragment.ARG_DATA_TO_DISPLAY, (ArrayList<? extends Parcelable>) results);
+			fragment.setArguments(args);
+			
+			FragmentManager fragmentManager = getFragmentManager();
+			fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
+
+			mNavDrawerList.setItemChecked(0, true);
+			setTitle(mNavBar[0]);
+			mDrawerLayout.closeDrawer(mNavDrawerList);
+			
+		}
 	}
 	
-
 	/** Swaps fragments in the main content view */
 	private void selectItem(String parsedData, int position) {
-	    // Create a new fragment and specify the planet to show based on position
-	    Fragment fragment = new MainContentFragment();
-	    Bundle args = new Bundle();
-	    args.putString(MainContentFragment.ARG_DATA_TO_DISPLAY, parsedData);
-	    fragment.setArguments(args);
+	    // Create a new fragment and specify the content to show based on position in nav drawer
 
-	    // Insert the fragment by replacing any existing fragment
-	    FragmentManager fragmentManager = getFragmentManager();
-	    fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
+		Fragment fragment = new MainContentFragment();
+		Bundle args = new Bundle();
+		args.putString(MainContentFragment.ARG_DATA_TO_DISPLAY, parsedData);
+		fragment.setArguments(args);
+
+		// Insert the fragment by replacing any existing fragment
+		FragmentManager fragmentManager = getFragmentManager();
+		fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
 
 	    // Highlight the selected item, update the title, and close the drawer
 	    mNavDrawerList.setItemChecked(position, true);
@@ -193,6 +232,31 @@ public class JobsListActivity extends ActionBarActivity {
 	/**
 	 * Fragment the controls the "content_frame". Displays content corresponding to nav bar item selected
 	 */
+	public static class ListMainContentFragment extends ListFragment {
+		public static final String ARG_DATA_TO_DISPLAY = "parsed_data";
+
+		public ListMainContentFragment() {
+			// Empty constructor
+		}
+
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container,
+				Bundle savedInstanceState) {
+			JobsListAdaptor adapter = new JobsListAdaptor(inflater.getContext(),
+					(List<Result>) getArguments().get(ARG_DATA_TO_DISPLAY));
+			setListAdapter(adapter);
+			
+			
+			
+//			ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+//					inflater.getContext(), android.R.layout.simple_list_item_1, 
+//					getArguments().getStringArrayList(ARG_DATA_TO_DISPLAY));
+//			setListAdapter(adapter);
+			return super.onCreateView(inflater, container, savedInstanceState);
+			
+		}
+	}
+		
 	public static class MainContentFragment extends Fragment {
 		public static final String ARG_DATA_TO_DISPLAY = "parsed_data";
 
@@ -203,92 +267,15 @@ public class JobsListActivity extends ActionBarActivity {
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
-			View rootView = inflater.inflate(R.layout.fragment_jobs_list,
-					container, false);
+			View rootView = inflater.inflate(R.layout.fragment_text_view,
+						container, false);
 			TextView mTextView = (TextView) rootView.findViewById(R.id.textView1);
 			String dataToDisplay = getArguments().getString(ARG_DATA_TO_DISPLAY);
 			Log.i("JobsListActivity", "Fragment display entered for "+dataToDisplay);
 			mTextView.setText(dataToDisplay);
 			return rootView;
-
 		}
 	}
-	
-	private class GetJobsTask extends AsyncTask<String, Void, String> {
 
-		private static final String TAG = "GetJobsTask";
-		//private static final String URL = "http://api.indeed.com/ads/apisearch?publisher=9616825572719411&v=2&format=xml&l=austin";
-		
-		@Override
-		protected String doInBackground(String... url) {
-			// Auto-generated method stub
-			String data = "";
-			List<Result> listResults = null;
-			HttpURLConnection urlConnection = null;
-			JobsListXMLParser mJobsListXMLParser = new JobsListXMLParser();
-			try {
-				urlConnection = (HttpURLConnection) new URL(url[0]).openConnection();
-				InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-				data = readStream(in);
-				listResults = mJobsListXMLParser.parse(in);
-				Log.i(TAG, "Entered try with "+data);
-			} catch (MalformedURLException exception) {
-				Log.e(TAG, "MalformedURLException");
-			} catch (IOException exception) {
-				Log.e(TAG, "IOException");
-			} catch (XmlPullParserException exception) {
-				Log.e(TAG, "XmlPullParserException");
-			} finally {
-				if (null != urlConnection)
-					urlConnection.disconnect();
-			}
-			return data;
-		}
-		
-		@Override
-		protected void onPostExecute(String result) {
-			mDataToParse = result;
-			// Insert parsed data into ListView
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			selectItem(mDataToParse, 0);
-		}
-
-		private String readStream(InputStream in) {
-			// Auto-generated method stub
-			BufferedReader reader = null;
-			StringBuffer data = new StringBuffer("");
-			try {
-				reader = new BufferedReader(new InputStreamReader(in));
-				String line = "";
-				while ((line = reader.readLine()) != null) {
-					data.append(line);
-				}
-			} catch (IOException e) {
-				Log.e(TAG, "IOException");
-			} finally {
-				if (reader != null) {
-					try {
-						reader.close();
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-			}
-			return data.toString();
-		}
-		
-	}
 
 }
