@@ -7,11 +7,15 @@
     <string name="filter_jobs">Filter</string>
     <string name="drawer_open">Drawer Open</string>
     <string name="drawer_closed">Drawer Closed</string>
-	<string-array name="nav_drawer_items">
+
+    <string-array name="nav_drawer_items">
         <item>All Jobs</item>
         <item>Saved Jobs</item>
         <item>Pervious Jobs</item>
         <item>My Resumes</item>
         <item>Tips and Tricks</item>
     </string-array>
+
+    <string name="title_activity_job_details">JobDetailsActivity</string>
+
 </resources>

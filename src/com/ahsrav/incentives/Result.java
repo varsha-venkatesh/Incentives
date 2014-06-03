@@ -2,7 +2,6 @@ package com.ahsrav.incentives;
 
 public class Result {
 	// This class represents a single result (post) in the XML feed.
-	// It includes the data members "title," "link," and "summary."
 	public final String jobTitle;
 	public final String companyName;
 	public final String location;
@@ -17,7 +16,6 @@ public class Result {
 		this.snippet = snippet;
 		this.url = url;
 		this.relativeTime = relativeTime;
-
 	}
 	
 	public Result(String jobTitle, String companyName, String location, String relativeTime) {
